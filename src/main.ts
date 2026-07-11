@@ -81,6 +81,10 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight)
 })
 
+// ---- 検証用フック(scripts/verify-desktop.mjs が参照) ----
+import { store } from './core/state'
+;(window as unknown as Record<string, unknown>).__myroom = { player, camera, renderer, store, refs }
+
 // ---- メインループ ----
 const clock = new THREE.Clock()
 renderer.setAnimationLoop(() => {

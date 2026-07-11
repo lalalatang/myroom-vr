@@ -59,7 +59,8 @@ export function createDesktopControls(ctx: AppContext, refs: WorldRefs): System 
   }
 
   const down = new THREE.Raycaster()
-  const dir = new THREE.Vector3()
+  const wish = new THREE.Vector3() // 入力から決まる目標速度
+  const vel = new THREE.Vector3() // 現在の水平速度(慣性)
   const fwd = new THREE.Vector3()
   const right = new THREE.Vector3()
 
@@ -71,22 +72,29 @@ export function createDesktopControls(ctx: AppContext, refs: WorldRefs): System 
       player.rotation.y = yaw
       camera.rotation.set(pitch, 0, 0)
 
-      // 移動(カメラ基準の水平移動)
+      // 移動(カメラ基準の水平移動)。目標速度へ加速/減速して慣性を出す。
       fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw))
       right.set(fwd.z, 0, -fwd.x)
-      dir.set(0, 0, 0)
-      if (keys.has('KeyW')) dir.add(fwd)
-      if (keys.has('KeyS')) dir.sub(fwd)
-      if (keys.has('KeyA')) dir.sub(right)
-      if (keys.has('KeyD')) dir.add(right)
-      if (dir.lengthSq() > 0) {
-        dir.normalize().multiplyScalar((keys.has('ShiftLeft') ? 4 : 2) * dt)
-        const nx = player.position.x + dir.x
-        const nz = player.position.z + dir.z
+      wish.set(0, 0, 0)
+      if (keys.has('KeyW')) wish.add(fwd)
+      if (keys.has('KeyS')) wish.sub(fwd)
+      if (keys.has('KeyA')) wish.sub(right)
+      if (keys.has('KeyD')) wish.add(right)
+      const moving = wish.lengthSq() > 0
+      if (moving) wish.normalize().multiplyScalar(keys.has('ShiftLeft') ? 4 : 2)
+      // 入力中は素早く、放したときはやや緩やかに減速
+      const rate = 1 - Math.exp(-(moving ? 12 : 8) * dt)
+      vel.x += (wish.x - vel.x) * rate
+      vel.z += (wish.z - vel.z) * rate
+      if (vel.lengthSq() > 1e-8) {
+        const nx = player.position.x + vel.x * dt
+        const nz = player.position.z + vel.z * dt
         // 20m四方の外へは出さない
         if (nx > -10 && nx < 10 && nz > -10 && nz < 10) {
           player.position.x = nx
           player.position.z = nz
+        } else {
+          vel.set(0, 0, 0)
         }
       }
 
