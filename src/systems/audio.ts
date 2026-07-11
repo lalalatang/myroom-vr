@@ -192,6 +192,10 @@ export function createAudio(ctx: AppContext, refs: WorldRefs): System {
     slide: buildSlide,
     click: buildClick,
     ignite: buildIgnite,
+    // v2 暫定(opus-audio-v2 が専用の合成音に置き換える)
+    splash: buildIgnite, // 水音: 着火ノイズを暫定流用
+    coin: buildChime, // チャリン: 風鈴を暫定流用
+    coinTarget: buildKon, // 的中: 鹿威しを暫定流用
   }
 
   const playPositional = (out: GainNode, pos: THREE.Vector3, dur: number, refDist = 1): void => {
