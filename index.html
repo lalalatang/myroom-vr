@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>myroom-vr — 書斎と縁側と庭</title>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0e13; }
+      #app { position: fixed; inset: 0; }
+      #app canvas { display: block; }
+      #hud {
+        position: fixed; left: 12px; top: 12px; z-index: 10;
+        color: #cfd6e4; font: 12px/1.7 system-ui, sans-serif;
+        background: rgba(10, 13, 20, 0.55); border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 8px; padding: 8px 12px; pointer-events: none;
+        user-select: none;
+      }
+      #hud b { color: #fff; }
+      #crosshair {
+        position: fixed; left: 50%; top: 50%; z-index: 9;
+        width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%;
+        background: rgba(255,255,255,0.7); pointer-events: none; display: none;
+      }
+      #hint {
+        position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); z-index: 10;
+        color: #e8edf7; font: 13px system-ui, sans-serif;
+        background: rgba(10,13,20,0.6); border-radius: 6px; padding: 4px 10px;
+        pointer-events: none; display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="hud">
+      <b>myroom-vr</b> — 書斎と縁側と庭<br />
+      デスクトップ: クリックで操作開始 / <b>WASD</b> 移動 / マウス視点 / <b>クリック</b>で仕掛け操作<br />
+      <b>1–4</b> 朝昼夕夜 / <b>R</b> 天候 / Quest: 下の「ENTER VR」で入室
+    </div>
+    <div id="crosshair"></div>
+    <div id="hint"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
