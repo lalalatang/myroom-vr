@@ -23,11 +23,41 @@ export function place(
   return g
 }
 
-/** 複数ジオメトリを1つの BufferGeometry に統合する(属性が揃っていること)。空配列は null。 */
+/**
+ * 複数ジオメトリを1つの BufferGeometry に統合する。空配列は null。
+ * mergeGeometries は「index の有無」「属性集合」が全ジオメトリで一致しないと失敗するため、
+ * ここで正規化する: index 混在は非インデックス化で統一し、欠落属性は補完する
+ * (color=白 / uv系=0 / normal=再計算)。BoxGeometry(indexed)と quadPrism(non-indexed)、
+ * paintUniform 済み(color付き)と未着色の混在を安全にマージできる。
+ */
 export function mergeAll(geoms: THREE.BufferGeometry[]): THREE.BufferGeometry | null {
   if (geoms.length === 0) return null
   if (geoms.length === 1) return geoms[0]
-  return mergeGeometries(geoms, false)
+
+  const anyIndexed = geoms.some((g) => g.index !== null)
+  const allIndexed = geoms.every((g) => g.index !== null)
+  const list = anyIndexed && !allIndexed ? geoms.map((g) => (g.index ? g.toNonIndexed() : g)) : geoms
+
+  const names = new Set<string>()
+  for (const g of list) for (const n of Object.keys(g.attributes)) names.add(n)
+  for (const g of list) {
+    const count = g.attributes.position.count
+    for (const n of names) {
+      if (g.attributes[n]) continue
+      if (n === 'color') {
+        const arr = new Float32Array(count * 3)
+        arr.fill(1)
+        g.setAttribute(n, new THREE.BufferAttribute(arr, 3))
+      } else if (n === 'normal') {
+        g.computeVertexNormals()
+      } else {
+        const proto = list.find((o) => o.attributes[n])
+        const itemSize = proto ? (proto.attributes[n] as THREE.BufferAttribute).itemSize : 2
+        g.setAttribute(n, new THREE.BufferAttribute(new Float32Array(count * itemSize), itemSize))
+      }
+    }
+  }
+  return mergeGeometries(list, false)
 }
 
 /** 統合ジオメトリを1本の Mesh にする。null(空)なら空の Group を返す(呼び出し側を簡潔に保つ)。 */

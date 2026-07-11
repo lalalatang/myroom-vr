@@ -39,6 +39,8 @@ interface Profile {
   /** フォグ(v2: 遠景を地平に溶かして浮遊感を消す)。色は時間帯の空気感に合わせる */
   fogColor: THREE.Color
   fogFar: number
+  /** HDRI背景の表示輝度(夜のHDRIが明るすぎるのを絞る) */
+  backgroundIntensity: number
   skyTop: THREE.Color // フォールバック空グラデーション
   skyBottom: THREE.Color
 }
@@ -54,6 +56,7 @@ function makeProfile(p: {
   envIntensity?: number
   fogColor?: number
   fogFar?: number
+  backgroundIntensity?: number
   skyTop: number
   skyBottom: number
 }): Profile {
@@ -68,6 +71,7 @@ function makeProfile(p: {
     envIntensity: p.envIntensity ?? 1,
     fogColor: new THREE.Color(p.fogColor ?? 0xcfdbe8),
     fogFar: p.fogFar ?? 150,
+    backgroundIntensity: p.backgroundIntensity ?? 1,
     skyTop: new THREE.Color(p.skyTop),
     skyBottom: new THREE.Color(p.skyBottom),
   }
@@ -114,6 +118,7 @@ const PROFILES: Record<TimeOfDay, Profile> = {
     hemiIntensity: 0.5,
     exposure: 1.05,
     envIntensity: 0.5,
+    backgroundIntensity: 0.9,
     fogColor: 0xa4765a,
     fogFar: 110,
     skyTop: 0x3f4d84,
@@ -129,6 +134,7 @@ const PROFILES: Record<TimeOfDay, Profile> = {
     hemiIntensity: 0.24, // 江戸の夜は現代より暗い(ただしVRで不安にならない下限)
     exposure: 1.15,
     envIntensity: 0.08,
+    backgroundIntensity: 0.3,
     fogColor: 0x0a0f18,
     fogFar: 80,
     skyTop: 0x090d1a,
@@ -318,7 +324,7 @@ export function createLighting(ctx: AppContext, refs: WorldRefs): System {
       glows,
       flicker: key !== 'deskLamp',
       // 行灯=和紙越しの暖色 / デスクランプ=やや白め / 提灯=1灯あたり控えめ(数が多いため)
-      lightBase: key === 'andon' ? 2.0 : key === 'chochin' ? 1.1 : 2.6,
+      lightBase: key === 'andon' ? 2.0 : key === 'chochin' ? 5.0 : 2.6,
       glowBase: key === 'andon' ? 1.6 : key === 'chochin' ? 2.0 : 1.2,
     })
   }
@@ -372,6 +378,7 @@ export function createLighting(ctx: AppContext, refs: WorldRefs): System {
     dst.envIntensity = src.envIntensity
     dst.fogColor.copy(src.fogColor)
     dst.fogFar = src.fogFar
+    dst.backgroundIntensity = src.backgroundIntensity
     dst.skyTop.copy(src.skyTop)
     dst.skyBottom.copy(src.skyBottom)
   }
@@ -421,6 +428,7 @@ export function createLighting(ctx: AppContext, refs: WorldRefs): System {
     fog.color.copy(cur.fogColor)
     fog.far = cur.fogFar
     fog.near = cur.fogFar * 0.18
+    scene.backgroundIntensity = cur.backgroundIntensity
 
     const u = domeMat.uniforms as {
       topColor: { value: THREE.Color }
@@ -487,6 +495,8 @@ export function createLighting(ctx: AppContext, refs: WorldRefs): System {
           from.envIntensity + (target.envIntensity - from.envIntensity) * t
         cur.fogColor.copy(from.fogColor).lerp(target.fogColor, t)
         cur.fogFar = from.fogFar + (target.fogFar - from.fogFar) * t
+        cur.backgroundIntensity =
+          from.backgroundIntensity + (target.backgroundIntensity - from.backgroundIntensity) * t
         cur.skyTop.copy(from.skyTop).lerp(target.skyTop, t)
         cur.skyBottom.copy(from.skyBottom).lerp(target.skyBottom, t)
         applyCurrent(elapsed)
