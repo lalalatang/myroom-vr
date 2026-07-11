@@ -2,6 +2,8 @@
 
 Meta Questのブラウザから入れる、和モダンの自分の部屋。WebXR + Three.js + Vite + TypeScript。
 
+**▶ 公開URL: https://lalalatang.github.io/myroom-vr/** (Questブラウザで開いて「ENTER VR」)
+
 - 書斎(文机・本棚・掛け軸・行灯・ラジオ・畳)→ 縁側(風鈴・障子)→ 庭(飛び石・池・楓・鹿威し・焚き火)がシームレスにつながる約20m四方の空間
 - 朝/昼/夕/夜の切替(HDRI・ライト連動)、晴れ/雨の天候、各種ギミック
 - アセットはすべてCC0(Poly Haven / ambientCG)。一覧は [ASSETS.md](ASSETS.md)
