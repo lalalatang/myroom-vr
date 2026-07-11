@@ -238,7 +238,7 @@ export function createAudio(ctx: AppContext, refs: WorldRefs): System {
   const radioPos = (): THREE.Vector3 =>
     refs.radio
       ? refs.radio.getWorldPosition(new THREE.Vector3())
-      : new THREE.Vector3(0, 0.8, LAYOUT.STUDY.minZ + 1)
+      : new THREE.Vector3(0, 0.8, LAYOUT.OKUNOMA.minZ + 1)
 
   let radioMode: 'files' | 'procedural' | 'pending' = 'pending'
   let radioTracks: string[] = []
@@ -499,16 +499,16 @@ export function createAudio(ctx: AppContext, refs: WorldRefs): System {
     crackleGain = cg
   }
 
-  // -- 屋内判定(雨のこもり用): 書斎・土間の屋根下 --
+  // -- 屋内判定(雨のこもり・通りの賑わい減衰用): 奥の間・店先の屋根下 --
   const isIndoors = (): boolean => {
     const p = ctx.camera.getWorldPosition(_tmp)
-    const inStudy =
-      p.x >= LAYOUT.STUDY.minX && p.x <= LAYOUT.STUDY.maxX &&
-      p.z >= LAYOUT.STUDY.minZ && p.z <= LAYOUT.STUDY.maxZ
-    const inDoma =
-      p.x >= LAYOUT.DOMA.minX && p.x <= LAYOUT.DOMA.maxX &&
-      p.z >= LAYOUT.DOMA.minZ && p.z <= LAYOUT.DOMA.maxZ
-    return inStudy || inDoma
+    const inOkunoma =
+      p.x >= LAYOUT.OKUNOMA.minX && p.x <= LAYOUT.OKUNOMA.maxX &&
+      p.z >= LAYOUT.OKUNOMA.minZ && p.z <= LAYOUT.OKUNOMA.maxZ
+    const inMise =
+      p.x >= LAYOUT.MISE.minX && p.x <= LAYOUT.MISE.maxX &&
+      p.z >= LAYOUT.MISE.minZ && p.z <= LAYOUT.MISE.maxZ
+    return inOkunoma || inMise
   }
 
   // =======================================================================

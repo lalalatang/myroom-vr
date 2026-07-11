@@ -36,6 +36,9 @@ interface Profile {
   exposure: number
   /** HDRI環境光(IBL)の強度。夜は絞らないと屋内が昼のように明るくなる */
   envIntensity: number
+  /** フォグ(v2: 遠景を地平に溶かして浮遊感を消す)。色は時間帯の空気感に合わせる */
+  fogColor: THREE.Color
+  fogFar: number
   skyTop: THREE.Color // フォールバック空グラデーション
   skyBottom: THREE.Color
 }
@@ -49,6 +52,8 @@ function makeProfile(p: {
   hemiIntensity: number
   exposure: number
   envIntensity?: number
+  fogColor?: number
+  fogFar?: number
   skyTop: number
   skyBottom: number
 }): Profile {
@@ -61,6 +66,8 @@ function makeProfile(p: {
     hemiIntensity: p.hemiIntensity,
     exposure: p.exposure,
     envIntensity: p.envIntensity ?? 1,
+    fogColor: new THREE.Color(p.fogColor ?? 0xcfdbe8),
+    fogFar: p.fogFar ?? 150,
     skyTop: new THREE.Color(p.skyTop),
     skyBottom: new THREE.Color(p.skyBottom),
   }
@@ -77,6 +84,8 @@ const PROFILES: Record<TimeOfDay, Profile> = {
     hemiIntensity: 0.6,
     exposure: 1.0,
     envIntensity: 0.85,
+    fogColor: 0xd8dce0,
+    fogFar: 130,
     skyTop: 0x8fb5e0,
     skyBottom: 0xf3d9b0,
   }),
@@ -90,6 +99,8 @@ const PROFILES: Record<TimeOfDay, Profile> = {
     hemiIntensity: 0.9,
     exposure: 1.0,
     envIntensity: 1.0,
+    fogColor: 0xd4e0ea,
+    fogFar: 155,
     skyTop: 0x5b8fd0,
     skyBottom: 0xbcd6ee,
   }),
@@ -103,6 +114,8 @@ const PROFILES: Record<TimeOfDay, Profile> = {
     hemiIntensity: 0.5,
     exposure: 1.05,
     envIntensity: 0.5,
+    fogColor: 0xa4765a,
+    fogFar: 110,
     skyTop: 0x3f4d84,
     skyBottom: 0xe8794a,
   }),
@@ -113,9 +126,11 @@ const PROFILES: Record<TimeOfDay, Profile> = {
     sunDir: [0.3, 0.82, -0.4],
     hemiSky: 0x2a3550,
     hemiGround: 0x14161e,
-    hemiIntensity: 0.32,
+    hemiIntensity: 0.24, // 江戸の夜は現代より暗い(ただしVRで不安にならない下限)
     exposure: 1.15,
-    envIntensity: 0.1,
+    envIntensity: 0.08,
+    fogColor: 0x0a0f18,
+    fogFar: 80,
     skyTop: 0x090d1a,
     skyBottom: 0x1c2436,
   }),
@@ -129,9 +144,9 @@ type HdriEntry = {
 
 interface LampEntry {
   id: LampId
-  light?: THREE.PointLight
-  glow?: THREE.MeshStandardMaterial
-  flicker: boolean // 行灯だけ和紙越しに揺らぐ
+  lights: THREE.PointLight[]
+  glows: THREE.MeshStandardMaterial[]
+  flicker: boolean // 行灯・提灯は揺らぐ
   lightBase: number
   glowBase: number
 }
@@ -162,6 +177,10 @@ export function createLighting(ctx: AppContext, refs: WorldRefs): System {
 
   const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1)
   scene.add(hemi)
+
+  // ---- フォグ(v2: 遠景リングと合わせて浮遊感を根絶) ----
+  const fog = new THREE.Fog(0xd4e0ea, 28, 155)
+  scene.fog = fog
 
   // ---- フォールバック用スカイドーム(HDRI 未取得時のみ表示) ----
   const domeMat = new THREE.ShaderMaterial({
@@ -280,21 +299,27 @@ export function createLighting(ctx: AppContext, refs: WorldRefs): System {
   for (const key of Object.keys(refs.lampFixtures) as LampId[]) {
     const fixture = refs.lampFixtures[key]
     if (!fixture) continue
-    const light = fixture.getObjectByName(`${key}Light`)
-    const glowMesh = fixture.getObjectByName(`${key}Glow`)
-    const glowMat =
-      glowMesh && (glowMesh as THREE.Mesh).material instanceof
-      THREE.MeshStandardMaterial
-        ? ((glowMesh as THREE.Mesh).material as THREE.MeshStandardMaterial)
-        : undefined
+    // `${id}Light`/`${id}Glow` の名を持つ子孫を全て収集(提灯群は多数のglow+少数のlightを持つ)
+    const lights: THREE.PointLight[] = []
+    const glows: THREE.MeshStandardMaterial[] = []
+    fixture.traverse((obj) => {
+      if (obj.name === `${key}Light` && obj instanceof THREE.PointLight) lights.push(obj)
+      if (
+        obj.name === `${key}Glow` &&
+        (obj as THREE.Mesh).isMesh &&
+        (obj as THREE.Mesh).material instanceof THREE.MeshStandardMaterial
+      ) {
+        glows.push((obj as THREE.Mesh).material as THREE.MeshStandardMaterial)
+      }
+    })
     lampEntries.push({
       id: key,
-      light: light instanceof THREE.PointLight ? light : undefined,
-      glow: glowMat,
-      flicker: key === 'andon',
-      // 行灯=和紙越しの暖色、デスクランプ=やや白めで明るい
-      lightBase: key === 'andon' ? 2.0 : 2.6,
-      glowBase: key === 'andon' ? 1.6 : 1.2,
+      lights,
+      glows,
+      flicker: key !== 'deskLamp',
+      // 行灯=和紙越しの暖色 / デスクランプ=やや白め / 提灯=1灯あたり控えめ(数が多いため)
+      lightBase: key === 'andon' ? 2.0 : key === 'chochin' ? 1.1 : 2.6,
+      glowBase: key === 'andon' ? 1.6 : key === 'chochin' ? 2.0 : 1.2,
     })
   }
 
@@ -345,6 +370,8 @@ export function createLighting(ctx: AppContext, refs: WorldRefs): System {
     dst.hemiIntensity = src.hemiIntensity
     dst.exposure = src.exposure
     dst.envIntensity = src.envIntensity
+    dst.fogColor.copy(src.fogColor)
+    dst.fogFar = src.fogFar
     dst.skyTop.copy(src.skyTop)
     dst.skyBottom.copy(src.skyBottom)
   }
@@ -368,6 +395,8 @@ export function createLighting(ctx: AppContext, refs: WorldRefs): System {
     applyHdri(state.timeOfDay)
     loadHdri(state.timeOfDay) // 未ロードなら取得
     beginTransition(state.timeOfDay)
+    // 提灯は夕・夜に自動点灯(江戸の通りの灯り)。手動トグルも可能なまま
+    store.setLamp('chochin', state.timeOfDay === 'evening' || state.timeOfDay === 'night')
   })
   void unsub // このシステムはアプリ寿命と同じ
 
@@ -388,6 +417,10 @@ export function createLighting(ctx: AppContext, refs: WorldRefs): System {
     hemi.intensity = cur.hemiIntensity
 
     renderer.toneMappingExposure = cur.exposure
+
+    fog.color.copy(cur.fogColor)
+    fog.far = cur.fogFar
+    fog.near = cur.fogFar * 0.18
 
     const u = domeMat.uniforms as {
       topColor: { value: THREE.Color }
@@ -412,8 +445,8 @@ export function createLighting(ctx: AppContext, refs: WorldRefs): System {
     for (const e of lampEntries) {
       const on = lamps[e.id]
       const f = e.flicker ? andonFlick : 1
-      if (e.light) e.light.intensity = on ? e.lightBase * f : 0
-      if (e.glow) e.glow.emissiveIntensity = on ? e.glowBase * f : 0
+      for (const l of e.lights) l.intensity = on ? e.lightBase * f : 0
+      for (const g of e.glows) g.emissiveIntensity = on ? e.glowBase * f : 0
     }
   }
 
@@ -452,6 +485,8 @@ export function createLighting(ctx: AppContext, refs: WorldRefs): System {
         cur.exposure = from.exposure + (target.exposure - from.exposure) * t
         cur.envIntensity =
           from.envIntensity + (target.envIntensity - from.envIntensity) * t
+        cur.fogColor.copy(from.fogColor).lerp(target.fogColor, t)
+        cur.fogFar = from.fogFar + (target.fogFar - from.fogFar) * t
         cur.skyTop.copy(from.skyTop).lerp(target.skyTop, t)
         cur.skyBottom.copy(from.skyBottom).lerp(target.skyBottom, t)
         applyCurrent(elapsed)
@@ -459,6 +494,14 @@ export function createLighting(ctx: AppContext, refs: WorldRefs): System {
       // 環境光(IBL)強度: 時間帯プロファイル × 雨天減光(単一の書き込み元をここに集約)
       scene.environmentIntensity =
         cur.envIntensity * (store.state.weather === 'rain' ? 0.6 : 1)
+      // 影の範囲(±14m)を60mの通り全域で使えるよう、太陽とターゲットをプレイヤーに追従させる
+      tmpPos.copy(cur.sunDir).multiplyScalar(SUN_DIST)
+      sun.position.set(
+        ctx.player.position.x + tmpPos.x,
+        tmpPos.y,
+        ctx.player.position.z + tmpPos.z,
+      )
+      sun.target.position.set(ctx.player.position.x, 0, ctx.player.position.z)
       applyLamps(elapsed)
       applyBonfire(elapsed)
     },

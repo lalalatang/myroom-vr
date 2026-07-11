@@ -89,8 +89,9 @@ export function createDesktopControls(ctx: AppContext, refs: WorldRefs): System 
       if (vel.lengthSq() > 1e-8) {
         const nx = player.position.x + vel.x * dt
         const nz = player.position.z + vel.z * dt
-        // 20m四方の外へは出さない
-        if (nx > -10 && nx < 10 && nz > -10 && nz < 10) {
+        // 歩行可能な外周(LAYOUT.BOUNDS)の外へは出さない
+        const b = LAYOUT.BOUNDS
+        if (nx > b.minX && nx < b.maxX && nz > b.minZ && nz < b.maxZ) {
           player.position.x = nx
           player.position.z = nz
         } else {

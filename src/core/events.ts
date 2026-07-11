@@ -10,6 +10,9 @@ export type SfxName =
   | 'chime' // 風鈴
   | 'slide' // 障子の開閉
   | 'ignite' // 焚き火点火
+  | 'splash' // 井戸の水音(v2)
+  | 'coin' // 小銭が地面に落ちる「チャリン」(v2)
+  | 'coinTarget' // 小銭が賽銭的に当たった時(v2)
 
 export interface BusEvents {
   /** 効果音再生要求。position があれば3D定位、なければ非定位。audio システムが消費 */

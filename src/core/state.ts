@@ -5,7 +5,7 @@ type StateListener = (state: WorldState, changed: keyof WorldState) => void
 const state: WorldState = {
   timeOfDay: 'noon',
   weather: 'clear',
-  lamps: { andon: false, deskLamp: false },
+  lamps: { andon: false, deskLamp: false, chochin: false },
   shojiOpen: false,
   radioPlaying: false,
   bonfireLit: false,

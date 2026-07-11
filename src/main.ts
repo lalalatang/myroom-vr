@@ -17,6 +17,8 @@ import { setupKakejiku } from './interactions/kakejiku'
 import { setupShishiodoshi } from './interactions/shishiodoshi'
 import { setupBonfire } from './interactions/bonfire'
 import { setupWindChime } from './interactions/windchime'
+import { setupStreet } from './interactions/street'
+import { createNpc } from './systems/npc'
 
 // ---- レンダラ(Quest向け設定: §5 パフォーマンス予算) ----
 const renderer = new THREE.WebGLRenderer({ antialias: true })
@@ -72,6 +74,8 @@ const systems: System[] = [
   setupShishiodoshi(ctx, refs),
   setupBonfire(ctx, refs),
   setupWindChime(ctx, refs),
+  setupStreet(ctx, refs),
+  createNpc(ctx, refs),
 ]
 
 // ---- リサイズ ----

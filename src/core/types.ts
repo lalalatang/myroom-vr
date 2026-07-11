@@ -8,7 +8,8 @@ import type * as THREE from 'three'
 
 export type TimeOfDay = 'morning' | 'noon' | 'evening' | 'night'
 export type Weather = 'clear' | 'rain'
-export type LampId = 'andon' | 'deskLamp'
+/** chochin = 通り沿いの提灯群(1トグルで一斉)。夕・夜に自動点灯される */
+export type LampId = 'andon' | 'deskLamp' | 'chochin'
 
 export interface WorldState {
   timeOfDay: TimeOfDay
@@ -81,6 +82,22 @@ export interface WorldRefs {
   pond?: THREE.Mesh
   /** 窓・障子開口部の中心(夕方の差し込み光などの演出用) */
   windowLightTargets?: THREE.Vector3[]
+
+  // ---- v2(江戸の町)----
+  /** 井戸。釣瓶(name:'tsurube')を子に持つ。interactions/street.ts が落下+水音を付ける */
+  well?: THREE.Object3D
+  /** 蕎麦屋台。湯気の起点(name:'steamAnchor')を子に持つ。床几は teleportSurfaces に別途登録 */
+  yatai?: THREE.Object3D
+  /** 木戸(通り西端)。開閉する扉パネル(name:'kidoGate')を子に持つ。夜は閉まる */
+  kido?: THREE.Object3D
+  /** 寺の鐘の音の発生位置(遠くの寺。ジオメトリ不要、音の定位のみ) */
+  templeBellPos?: THREE.Vector3
+  /** 暖簾(はためき対象)。各Object3Dは布メッシュ(PlaneGeometry, 縦セグメント≥4)を子に持つ */
+  noren?: THREE.Object3D[]
+  /** 賽銭的(鳥居前の賽銭箱など)。小銭が当たると特別な音が鳴る */
+  coinTarget?: THREE.Object3D
+  /** NPCが歩く通りの経路の目安(折返し両端のX)。未指定時は npc.ts が LAYOUT.STREET から決める */
+  npcPathXRange?: [number, number]
 }
 
 // ---- インタラクション --------------------------------------------------

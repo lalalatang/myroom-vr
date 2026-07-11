@@ -21,7 +21,7 @@ const RAIN_HEIGHT = 6
 const RIPPLE_POOL = 6
 
 // 屋根に覆われた領域(この XZ には雨粒を降らせない)
-const ROOFED = [LAYOUT.STUDY, LAYOUT.ENGAWA, LAYOUT.DOMA]
+const ROOFED = [LAYOUT.MISE, LAYOUT.OKUNOMA]
 
 function insideRoof(x: number, z: number): boolean {
   for (const r of ROOFED) {
